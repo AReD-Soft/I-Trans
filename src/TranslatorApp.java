@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,14 +17,14 @@ public class TranslatorApp {
     private JTextField inputFolderField;
     private JTextField outputFolderField;
     private JComboBox<String> languageComboBox;
-    private JTextArea logArea; // Area untuk menampilkan log proses
+    private JTextArea logArea; // Area for displaying process logs
 
     public TranslatorApp() {
-        // Membangun antarmuka GUI
+        // Build GUI interface
         frame = new JFrame("I-Trans 1.0");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 400); // Ukuran jendela
-        frame.setLayout(new FlowLayout()); // Menggunakan FlowLayout
+        frame.setSize(600, 400); // Window size
+        frame.setLayout(new FlowLayout()); // Using FlowLayout
 
         // Center window on the screen
         frame.setLocationRelativeTo(null);
@@ -31,9 +32,9 @@ public class TranslatorApp {
         // Change window icon (replace "path/to/icon.png" with your icon path)
         frame.setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getClassLoader().getResource("icon.png")));
 
-        // Membuat JTextField untuk input dan output folder
-        inputFolderField = new JTextField(30); // Ukuran yang lebih besar
-        outputFolderField = new JTextField(30); // Ukuran yang lebih besar
+        // Create JTextFields for input and output folder selection
+        inputFolderField = new JTextField(30); // Larger size
+        outputFolderField = new JTextField(30); // Larger size
 
         JButton inputButton = new JButton("Select Input Folder");
         inputButton.addActionListener(e -> chooseFolder(inputFolderField));
@@ -44,11 +45,11 @@ public class TranslatorApp {
         JButton translateButton = new JButton("Translate");
         translateButton.addActionListener(e -> translateFiles());
 
-        // Dropdown untuk memilih bahasa
-        String[] languages = {"id","am","ar","eu","bn","en-GB","pt-BR","bg","ca","chr","jam","cs","da","nl","en","et","fil","fi","fr","de","el","gu","iw","hi","hu","it","ja","kn","ko","lv","lt","ms","ml","mr","no","pl","pt-PT","ro","ru","sr","zh-CN","sk","sl","es","sw","sv","ta","te","th","zh-TW","tr","ur","uk","vi","cy"};
+        // Dropdown for language selection
+        String[] languages = {"id", "am", "ar", "eu", "bn", "en-GB", "pt-BR", "bg", "ca", "chr", "jam", "cs", "da", "nl", "en", "et", "fil", "fi", "fr", "de", "el", "gu", "iw", "hi", "hu", "it", "ja", "kn", "ko", "lv", "lt", "ms", "ml", "mr", "no", "pl", "pt-PT", "ro", "ru", "sr", "zh-CN", "sk", "sl", "es", "sw", "sv", "ta", "te", "th", "zh-TW", "tr", "ur", "uk", "vi", "cy"};
         languageComboBox = new JComboBox<>(languages);
 
-        // Menambahkan komponen ke frame
+        // Adding components to the frame
         frame.add(new JLabel("Input Folder:"));
         frame.add(inputFolderField);
         frame.add(inputButton);
@@ -61,10 +62,10 @@ public class TranslatorApp {
         frame.add(languageComboBox);
         frame.add(translateButton);
 
-        // Membuat JTextArea untuk log proses
-        logArea = new JTextArea(15, 50); // Ukuran area log
-        logArea.setEditable(false); // Tidak dapat diedit
-        JScrollPane scrollPane = new JScrollPane(logArea); // Menambahkan scroll untuk area log
+        // Create JTextArea for process logs
+        logArea = new JTextArea(15, 50); // Log area size
+        logArea.setEditable(false); // Make it read-only
+        JScrollPane scrollPane = new JScrollPane(logArea); // Add scroll to log area
         frame.add(scrollPane);
 
         frame.setVisible(true);
@@ -88,14 +89,24 @@ public class TranslatorApp {
             return;
         }
 
-        // Gunakan SwingWorker untuk memproses terjemahan di latar belakang
+        // Use SwingWorker to process translation in the background
         SwingWorker<Void, String> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() throws Exception {
                 try {
                     Files.walk(Paths.get(inputFolder))
-                         .filter(path -> path.toString().endsWith(".xml"))
-                         .forEach(path -> translateFile(path.toFile(), outputFolder, targetLanguage));
+                            .filter(path -> path.toString().endsWith(".xml"))
+                            .forEach(path -> {
+                                // Get relative path from inputFolder to maintain folder structure
+                                Path relativePath = Paths.get(inputFolder).relativize(path);
+                                File outputFile = new File(outputFolder, relativePath.toString());
+
+                                // Create output folder if it doesn't exist
+                                outputFile.getParentFile().mkdirs();
+
+                                // Translate the file
+                                translateFile(path.toFile(), outputFile, targetLanguage);
+                            });
                 } catch (IOException e) {
                     publish("An error occurred while processing files: " + e.getMessage());
                 }
@@ -106,21 +117,21 @@ public class TranslatorApp {
             protected void process(List<String> chunks) {
                 for (String message : chunks) {
                     logArea.append(message + "\n");
-                    logArea.setCaretPosition(logArea.getDocument().getLength()); // Scroll ke bawah
+                    logArea.setCaretPosition(logArea.getDocument().getLength()); // Scroll to bottom
                 }
             }
 
             @Override
             protected void done() {
                 try {
-                    get(); // Memanggil get untuk menangkap exception dari doInBackground
+                    get(); // Catch any exceptions from doInBackground
                 } catch (Exception e) {
                     publish("Translation failed: " + e.getMessage());
                 }
                 JOptionPane.showMessageDialog(frame, "Translation process completed.", "Success", JOptionPane.INFORMATION_MESSAGE);
             }
 
-            private void translateFile(File inputFile, String outputFolder, String targetLanguage) {
+            private void translateFile(File inputFile, File outputFile, String targetLanguage) {
                 try {
                     String content = readFileWithBOM(inputFile);
                     String regex = "String=\"(.*?)\"";
@@ -131,15 +142,13 @@ public class TranslatorApp {
                     while (matcher.find()) {
                         String originalText = matcher.group(1).trim(); // Get the string inside quotes
                         String translatedText = translateText(originalText, targetLanguage);
-                        // Replace the original string with the translated one
                         content = content.replace(matcher.group(0), "String=\"" + translatedText + "\"");
-                        logTranslation(inputFile, originalText, translatedText); // Log proses penerjemahan
+                        logTranslation(inputFile, originalText, translatedText); // Log translation process
                     }
 
                     // Save the translated file
-                    File outputFile = new File(outputFolder, inputFile.getName());
                     Files.write(outputFile.toPath(), content.getBytes("UTF-16LE"));
-                    // Log setelah file berhasil disimpan
+                    // Log after file successfully saved
                     publish("File saved: " + outputFile.getAbsolutePath());
                 } catch (IOException e) {
                     publish("Error processing file: " + inputFile.getAbsolutePath() + " - " + e.getMessage());
@@ -147,7 +156,7 @@ public class TranslatorApp {
             }
 
             private void logTranslation(File inputFile, String originalText, String translatedText) {
-                // Menambahkan log ke JTextArea
+                // Add log to JTextArea
                 publish("Translated from file: " + inputFile.getAbsolutePath());
                 publish("Original: " + originalText);
                 publish("Translated: " + translatedText + "\n");
@@ -196,7 +205,7 @@ public class TranslatorApp {
             }
         };
 
-        worker.execute(); // Menjalankan worker
+        worker.execute(); // Execute worker
     }
 
     public static void main(String[] args) {
