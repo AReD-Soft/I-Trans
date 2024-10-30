@@ -138,17 +138,52 @@ public class TranslatorApp {
                     Pattern pattern = Pattern.compile(regex);
                     Matcher matcher = pattern.matcher(content);
 
-                    // Replacing the matched strings with their translations
+                    StringBuilder modifiedContent = new StringBuilder(content);
+
+                    // Kata yang dikecualikan
+                    List<String> excludedWords = List.of("Wizard", "Mage Slave", "Sorcerer"); // Daftar kata yang dikecualikan
+                    List<String> replaceword = List.of("Replacement1", "Replacement2", "Replacement3"); // Placeholder words
+
+                    // Proses untuk mengganti kata yang dikecualikan
                     while (matcher.find()) {
-                        String originalText = matcher.group(1).trim(); // Get the string inside quotes
-                        String translatedText = translateText(originalText, targetLanguage);
-                        content = content.replace(matcher.group(0), "String=\"" + translatedText + "\"");
+                        String originalText = matcher.group(1).trim(); // Ambil teks asli di dalam tanda kutip
+
+                        String modifiedText = originalText; // Simpan teks yang telah dimodifikasi
+
+                        // Mengganti kata yang dikecualikan dengan placeholder dari replaceword
+                        for (int i = 0; i < excludedWords.size(); i++) {
+                            String excludedWord = excludedWords.get(i);
+                            if (modifiedText.contains(excludedWord)) {
+                                // Ganti kata dengan format 'ReplacementX[Word]'
+                                String uniquePlaceholder = replaceword.get(i) + "[" + excludedWord + "]";
+                                modifiedText = modifiedText.replaceAll(excludedWord, uniquePlaceholder);
+                            }
+                        }
+
+                        // Kirim teks yang telah dimodifikasi untuk diterjemahkan
+                        String translatedText = translateText(modifiedText, targetLanguage);
+
+                        // Setelah terjemahan, ganti placeholder seperti 'Replacement1[Penyihir]' menjadi 'Wizard[Penyihir]'
+                        for (int i = 0; i < excludedWords.size(); i++) {
+                            String excludedWord = excludedWords.get(i);
+                            // Ganti 'ReplacementX[TranslatedWord]' menjadi 'OriginalWord[TranslatedWord]'
+                            translatedText = translatedText.replaceAll(replaceword.get(i) + "\\[(.*?)\\]", excludedWord + "[$1]");
+                        }
+
+                        // Proses penghapusan semua tag beserta isinya
+                        // Menghapus semua konten di dalam tanda kurung kotak, seperti '[Penyihir]'
+                        translatedText = translatedText.replaceAll("\\[(.*?)\\]", "");
+
+                        // Ganti hasil terjemahan kembali ke konten
+                        modifiedContent = new StringBuilder(modifiedContent.toString().replace(matcher.group(0), "String=\"" + translatedText + "\""));
+
+                        // Log proses terjemahan
                         logTranslation(inputFile, originalText, translatedText); // Log translation process
                     }
 
-                    // Save the translated file
-                    Files.write(outputFile.toPath(), content.getBytes("UTF-16LE"));
-                    // Log after file successfully saved
+                    // Simpan file yang telah diterjemahkan
+                    Files.write(outputFile.toPath(), modifiedContent.toString().getBytes("UTF-16LE"));
+                    // Log setelah file berhasil disimpan
                     publish("File saved: " + outputFile.getAbsolutePath());
                 } catch (IOException e) {
                     publish("Error processing file: " + inputFile.getAbsolutePath() + " - " + e.getMessage());
@@ -175,32 +210,26 @@ public class TranslatorApp {
                     String urlStr = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + targetLanguage + "&dt=t&q=" + java.net.URLEncoder.encode(text, "UTF-8");
                     // Use URI to resolve URL issues
                     URI uri = new URI(urlStr);
-                    URL url = uri.toURL(); // Convert URI to URL
-
-                    // Opens an HTTP connection
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
                     conn.setRequestMethod("GET");
-                    conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                    conn.setRequestProperty("Accept-Charset", "UTF-8");
 
-                    // Read results from the API
-                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    String inputLine;
+                    // Read response
+                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
                     StringBuilder response = new StringBuilder();
-
+                    String inputLine;
                     while ((inputLine = in.readLine()) != null) {
                         response.append(inputLine);
                     }
                     in.close();
 
-                    // Parsing JSON response (results from Google Translate API)
+                    // Extract translation from JSON response
                     String jsonResponse = response.toString();
-                    // The translation results will be in the first array of JSON
-                    String translatedText = jsonResponse.split("\"")[1];
-
-                    return translatedText; // Return the translated text
+                    String translatedText = jsonResponse.split("\"")[1]; // Get the translation
+                    return translatedText;
                 } catch (Exception e) {
-                    JOptionPane.showMessageDialog(frame, "Failed to translate text.", "Error", JOptionPane.ERROR_MESSAGE);
-                    return text; // Return original text if translation fails
+                    publish("Translation error: " + e.getMessage());
+                    return text; // Return the original text on error
                 }
             }
         };
@@ -209,6 +238,6 @@ public class TranslatorApp {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(TranslatorApp::new);
+        new TranslatorApp(); // Create and run the application
     }
 }
