@@ -20,13 +20,13 @@ public class TranslatorApp {
     private JTextArea logArea; // Area for displaying process logs
 
     public TranslatorApp() {
-        // Build GUI interface
+        // Build the GUI interface
         frame = new JFrame("I-Trans 1.0");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400); // Window size
         frame.setLayout(new FlowLayout()); // Using FlowLayout
 
-        // Center window on the screen
+        // Center the window on the screen
         frame.setLocationRelativeTo(null);
 
         // Change window icon (replace "path/to/icon.png" with your icon path)
@@ -49,7 +49,7 @@ public class TranslatorApp {
         String[] languages = {"id", "am", "ar", "eu", "bn", "en-GB", "pt-BR", "bg", "ca", "chr", "jam", "cs", "da", "nl", "en", "et", "fil", "fi", "fr", "de", "el", "gu", "iw", "hi", "hu", "it", "ja", "kn", "ko", "lv", "lt", "ms", "ml", "mr", "no", "pl", "pt-PT", "ro", "ru", "sr", "zh-CN", "sk", "sl", "es", "sw", "sv", "ta", "te", "th", "zh-TW", "tr", "ur", "uk", "vi", "cy"};
         languageComboBox = new JComboBox<>(languages);
 
-        // Adding components to the frame
+        // Add components to the frame
         frame.add(new JLabel("Input Folder:"));
         frame.add(inputFolderField);
         frame.add(inputButton);
@@ -139,51 +139,51 @@ public class TranslatorApp {
                     Matcher matcher = pattern.matcher(content);
 
                     StringBuilder modifiedContent = new StringBuilder(content);
-
-                    // Kata yang dikecualikan
-                    List<String> excludedWords = List.of("Wizard", "Mage Slave", "Sorcerer"); // Daftar kata yang dikecualikan
-                    List<String> replaceword = List.of("Replacement1", "Replacement2", "Replacement3"); // Placeholder words
-
-                    // Proses untuk mengganti kata yang dikecualikan
+                    // Process to replace excluded words
                     while (matcher.find()) {
-                        String originalText = matcher.group(1).trim(); // Ambil teks asli di dalam tanda kutip
+                        String originalText = matcher.group(1).trim(); // Extract original text inside quotes
 
-                        String modifiedText = originalText; // Simpan teks yang telah dimodifikasi
+                        // Excluded words
+                        List<String> excludedWords = List.of("Wizard", "Mage Slave"); // List of excluded words
 
-                        // Mengganti kata yang dikecualikan dengan placeholder dari replaceword
+                        // Replace excluded words
                         for (int i = 0; i < excludedWords.size(); i++) {
                             String excludedWord = excludedWords.get(i);
-                            if (modifiedText.contains(excludedWord)) {
-                                // Ganti kata dengan format 'ReplacementX[Word]'
-                                String uniquePlaceholder = replaceword.get(i) + "[" + excludedWord + "]";
-                                modifiedText = modifiedText.replaceAll(excludedWord, uniquePlaceholder);
+                            if (originalText.contains(excludedWord)) {
+                                // Replace with format '1[Word]'
+                                String uniquePlaceholder = (i + 1) + "[" + excludedWord + "]";
+                                originalText = originalText.replace(excludedWord, uniquePlaceholder);
                             }
                         }
 
-                        // Kirim teks yang telah dimodifikasi untuk diterjemahkan
-                        String translatedText = translateText(modifiedText, targetLanguage);
+                        // Send the modified text for translation
+                        String translatedText = translateText(originalText, targetLanguage);
 
-                        // Setelah terjemahan, ganti placeholder seperti 'Replacement1[Penyihir]' menjadi 'Wizard[Penyihir]'
-                        for (int i = 0; i < excludedWords.size(); i++) {
-                            String excludedWord = excludedWords.get(i);
-                            // Ganti 'ReplacementX[TranslatedWord]' menjadi 'OriginalWord[TranslatedWord]'
-                            translatedText = translatedText.replaceAll(replaceword.get(i) + "\\[(.*?)\\]", excludedWord + "[$1]");
+                        // After translation, detect placeholders and restore original words
+                        String tagPattern = "(\\d+)\\[(.*?)\\]";
+                        Pattern tagRegex = Pattern.compile(tagPattern);
+                        Matcher tagMatcher = tagRegex.matcher(translatedText);
+
+                        while (tagMatcher.find()) {
+                            // Retrieve index from placeholder (e.g., 1, 2, etc.)
+                            int index = Integer.parseInt(tagMatcher.group(1)) - 1; // Get corresponding index from excludedWords
+                            if (index >= 0 && index < excludedWords.size()) {
+                                // Replace placeholder with word from excludedWords list
+                                String originalWord = excludedWords.get(index);
+                                translatedText = translatedText.replace(tagMatcher.group(0), originalWord);
+                            }
                         }
 
-                        // Proses penghapusan semua tag beserta isinya
-                        // Menghapus semua konten di dalam tanda kurung kotak, seperti '[Penyihir]'
-                        translatedText = translatedText.replaceAll("\\[(.*?)\\]", "");
-
-                        // Ganti hasil terjemahan kembali ke konten
+                        // Replace the translation back into the content
                         modifiedContent = new StringBuilder(modifiedContent.toString().replace(matcher.group(0), "String=\"" + translatedText + "\""));
 
-                        // Log proses terjemahan
+                        // Log translation process
                         logTranslation(inputFile, originalText, translatedText); // Log translation process
                     }
 
-                    // Simpan file yang telah diterjemahkan
+                    // Save the translated file
                     Files.write(outputFile.toPath(), modifiedContent.toString().getBytes("UTF-16LE"));
-                    // Log setelah file berhasil disimpan
+                    // Log after file is successfully saved
                     publish("File saved: " + outputFile.getAbsolutePath());
                 } catch (IOException e) {
                     publish("Error processing file: " + inputFile.getAbsolutePath() + " - " + e.getMessage());
@@ -214,7 +214,7 @@ public class TranslatorApp {
                     conn.setRequestMethod("GET");
                     conn.setRequestProperty("Accept-Charset", "UTF-8");
 
-                    // Read response
+                    // Read the response
                     BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
                     StringBuilder response = new StringBuilder();
                     String inputLine;
@@ -234,7 +234,7 @@ public class TranslatorApp {
             }
         };
 
-        worker.execute(); // Execute worker
+        worker.execute(); // Execute the worker
     }
 
     public static void main(String[] args) {
