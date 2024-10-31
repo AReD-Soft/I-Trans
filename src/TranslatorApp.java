@@ -144,13 +144,63 @@ public class TranslatorApp {
                         String originalText = matcher.group(1).trim(); // Extract original text inside quotes
 
                         // Excluded words
-                        List<String> excludedWords = List.of("Wizard", "Mage Slave"); // List of excluded words
+                        List<String> excludedWords = List.of( 
+                        "Arcane Sky", "Mirage Sky", "Astral Sky", "Shifting Sky", "Twilight Sky", "Royal Sky", 
+                        "Pious Sky", "Apex Sky", "Spiritual Adept", "Aware of Principle", "Aware of Harmony", 
+                        "Aware of Discord", "Aware of Coalescence", "Transcendent", "Enlightened One", 
+                        "Aware of Vacuity", "Aware of the Myriad", "Master of Harmony", "Celestial Sage", 
+                        "Aware of the Void", "Master of Discord", "Celestial Demon", "Chaotic Soul", 
+                        "Celestial Saint", "Try Out", "War Avatar", "Total Aptitute", "Perfect World", "Thigh Thickness",
+                        "Astral Infusion", "Winged Elf", "Untamed Rising", "Arctic Warfare",  
+                        "Username", "Password", "Start", "Level", "Vitality", "Strength", "Magic", "Dexternity", 
+                        "Spirit", "Damage", "Attack", "Defense", "Soulforce", "Stealth", "Slaying", 
+                        "Warding", "Title", "Order", "Fashion", "Quest", "Flyer", "Codex", "Warsoul", 
+                        "Event", "Cross", "Squad", "Faction", "Private", "Trade", "Chat", "World", 
+                        "Horn", "Skill", "Skills", "Demon", "Sage", "Leadership", "Nuema", "Destroyer", 
+                        "Battle", "Longetivity", "Durability", "Soulprime", "Lifeprime", "infuse", 
+                        "Infuse", "Bestiary", "Pet", "Meridian", "Area", "Shop", "Star", "Point", 
+                        "Flyers", "Mount", "Utility", "Craft", "Auction", "Settings", "Game", 
+                        "Hotkeys", "Shortcut", "Default", "Horoscope", "Stargazing", "Starshift", 
+                        "Birthstar", "Fatestar", "Summon", "Luminance", "Shroud", "Corona", "Glyph", 
+                        "Cultivation", "Warrior", "Untamed", "Tideborn", "Earthguard", "Nightshade", 
+                        "Blademaster", "Wizard", "Psychic", "Venomancer", "Barbarian", "Assassin", 
+                        "Archer", "Cleric", "Seeker", "Mystic", "Duskblade", "Stormbringer", "Windwalker", 
+                        "Technician", "Edgerunner", "Class", "NOTICE", "Nation", "T.", "E.", "W.", 
+                        "H.", "U.", "N.", "Servers", "Server", "server", "Face", "Lips", "Transpar.", 
+                        "Embellish", "Bundle", "Hair", "Facial", "CrusThickness", "Soften", "Money", "CON",
+                        "STR", "INT", "DEX", "Guild"); // List of excluded words
+
+                        List<String> replacedWords = List.of(
+                        "Arcane Sky", "Mirage Sky", "Astral Sky", "Shifting Sky", "Twilight Sky", "Royal Sky", 
+                        "Pious Sky", "Apex Sky", "Spiritual Adept", "Aware of Principle", "Aware of Harmony", 
+                        "Aware of Discord", "Aware of Coalescence", "Transcendent", "Enlightened One", 
+                        "Aware of Vacuity", "Aware of the Myriad", "Master of Harmony", "Celestial Sage", 
+                        "Aware of the Void", "Master of Discord", "Celestial Demon", "Chaotic Soul", 
+                        "Celestial Saint", "Coba", "War Avatar", "Total Aptitute", "Perfect World", "Tebal Paha", 
+                        "Astral Infusion", "Peri", "Kebangkitan Siluman", "Perang Arctic",  
+                        "Username", "Password", "Masuk", "Level", "Vitality", "Strength", "Magic", "Dexternity", 
+                        "Spirit", "Damage", "Attack", "Defense", "Soulforce", "Stealth", "Slaying", 
+                        "Warding", "Title", "Order", "Busana", "Quest", "Flyer", "Codex", "Warsoul", 
+                        "Event", "Cross", "Party", "Guild", "Private", "Trade", "Chat", "World", 
+                        "Horn", "Skill", "Skills", "Demon", "Sage", "Leadership", "Nuema", "Destroyer", 
+                        "Battle", "Longetivity", "Durability", "Soulprime", "Lifeprime", "infuse", 
+                        "Infuse", "Bestiary", "Pet", "Meridian", "Area", "Shop", "Star", "Point", 
+                        "Flyers", "Mount", "Utility", "Craft", "Auction", "Settings", "Game", 
+                        "Hotkeys", "Shortcut", "Default", "Horoscope", "Stargazing", "Starshift", 
+                        "Birthstar", "Fatestar", "Summon", "Luminance", "Shroud", "Corona", "Glyph", 
+                        "Kultivasi", "Warrior", "Siluman", "Duyung", "Dewa", "Nightshade", 
+                        "Warrior", "Mage", "Psychic", "Foxlady", "Bestial", "Assassin", 
+                        "Archer", "Priest", "Seeker", "Mystic", "Duskblade", "Stormbringer", "Windwalker", 
+                        "Technician", "Edgerunner", "Job", "PERHATIAN", "Nation", "Du.", "De.", "P.", 
+                        "M.", "S.", "N.", "Servers", "Server", "server", "Wajah", "Lips", "Transparasi", 
+                        "Hiasan", "Ikat", "Rambut", "Rias Wajah", "Tebal Betis", "Lembut", "Koin", "CON",
+                        "STR", "INT", "DEX", "Guild"); // List of replaced words
 
                         // Replace excluded words
                         for (int i = 0; i < excludedWords.size(); i++) {
                             String excludedWord = excludedWords.get(i);
                             if (originalText.contains(excludedWord)) {
-                                // Replace with format '1[Word]'
+                                // Replace with format "1[Word]'
                                 String uniquePlaceholder = (i + 1) + "[" + excludedWord + "]";
                                 originalText = originalText.replace(excludedWord, uniquePlaceholder);
                             }
@@ -167,9 +217,9 @@ public class TranslatorApp {
                         while (tagMatcher.find()) {
                             // Retrieve index from placeholder (e.g., 1, 2, etc.)
                             int index = Integer.parseInt(tagMatcher.group(1)) - 1; // Get corresponding index from excludedWords
-                            if (index >= 0 && index < excludedWords.size()) {
-                                // Replace placeholder with word from excludedWords list
-                                String originalWord = excludedWords.get(index);
+                            if (index >= 0 && index < replacedWords.size()) {
+                                // Replace placeholder with word from replacedWords list
+                                String originalWord = replacedWords.get(index);
                                 translatedText = translatedText.replace(tagMatcher.group(0), originalWord);
                             }
                         }
