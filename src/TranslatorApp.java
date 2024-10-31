@@ -132,113 +132,126 @@ public class TranslatorApp {
             }
 
             private void translateFile(File inputFile, File outputFile, String targetLanguage) {
-                try {
-                    String content = readFileWithBOM(inputFile);
-                    String regex = "String=\"(.*?)\"";
-                    Pattern pattern = Pattern.compile(regex);
-                    Matcher matcher = pattern.matcher(content);
+    try {
+        String content = readFileWithBOM(inputFile);
+        String regex = "String=\"(.*?)\"";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(content);
 
-                    StringBuilder modifiedContent = new StringBuilder(content);
-                    // Process to replace excluded words
-                    while (matcher.find()) {
-                        String originalText = matcher.group(1).trim(); // Extract original text inside quotes
+        StringBuilder modifiedContent = new StringBuilder(content);
 
-                        // Excluded words
-                        List<String> excludedWords = List.of( 
-                        "Arcane Sky", "Mirage Sky", "Astral Sky", "Shifting Sky", "Twilight Sky", "Royal Sky", 
-                        "Pious Sky", "Apex Sky", "Spiritual Adept", "Aware of Principle", "Aware of Harmony", 
-                        "Aware of Discord", "Aware of Coalescence", "Transcendent", "Enlightened One", 
-                        "Aware of Vacuity", "Aware of the Myriad", "Master of Harmony", "Celestial Sage", 
-                        "Aware of the Void", "Master of Discord", "Celestial Demon", "Chaotic Soul", 
-                        "Celestial Saint", "Try Out", "War Avatar", "Total Aptitute", "Perfect World", "Thigh Thickness",
-                        "Astral Infusion", "Winged Elf", "Untamed Rising", "Arctic Warfare",  
-                        "Username", "Password", "Start", "Level", "Vitality", "Strength", "Magic", "Dexternity", 
-                        "Spirit", "Damage", "Attack", "Defense", "Soulforce", "Stealth", "Slaying", 
-                        "Warding", "Title", "Order", "Fashion", "Quest", "Flyer", "Codex", "Warsoul", 
-                        "Event", "Cross", "Squad", "Faction", "Private", "Trade", "Chat", "World", 
-                        "Horn", "Skill", "Skills", "Demon", "Sage", "Leadership", "Nuema", "Destroyer", 
-                        "Battle", "Longetivity", "Durability", "Soulprime", "Lifeprime", "infuse", 
-                        "Infuse", "Bestiary", "Pet", "Meridian", "Area", "Shop", "Star", "Point", 
-                        "Flyers", "Mount", "Utility", "Craft", "Auction", "Settings", "Game", 
-                        "Hotkeys", "Shortcut", "Default", "Horoscope", "Stargazing", "Starshift", 
-                        "Birthstar", "Fatestar", "Summon", "Luminance", "Shroud", "Corona", "Glyph", 
-                        "Cultivation", "Warrior", "Untamed", "Tideborn", "Earthguard", "Nightshade", 
-                        "Blademaster", "Wizard", "Psychic", "Venomancer", "Barbarian", "Assassin", 
-                        "Archer", "Cleric", "Seeker", "Mystic", "Duskblade", "Stormbringer", "Windwalker", 
-                        "Technician", "Edgerunner", "Class", "NOTICE", "Nation", "T.", "E.", "W.", 
-                        "H.", "U.", "N.", "Servers", "Server", "server", "Face", "Lips", "Transpar.", 
-                        "Embellish", "Bundle", "Hair", "Facial", "CrusThickness", "Soften", "Money", "CON",
-                        "STR", "INT", "DEX", "Guild"); // List of excluded words
+        // Daftar kata yang dikecualikan
+        List<String> excludedWords = List.of(
+            "Arcane Sky", "Mirage Sky", "Astral Sky", "Shifting Sky", "Twilight Sky", "Royal Sky",
+            "Pious Sky", "Apex Sky", "Spiritual Adept", "Aware of Principle", "Aware of Harmony",
+            "Aware of Discord", "Aware of Coalescence", "Transcendent", "Enlightened One",
+            "Aware of Vacuity", "Aware of the Myriad", "Master of Harmony", "Celestial Sage",
+            "Aware of the Void", "Master of Discord", "Celestial Demon", "Chaotic Soul",
+            "Celestial Saint", "Try Out", "War Avatar", "Total Aptitute", "Perfect World", "Thigh Thickness",
+            "Astral Infusion", "Winged Elf", "Rising", "Arctic Warfare",
+            "Username", "Password", "Start", "Level", "Vitality", "Strength", "Magic", "Dexternity",
+            "Spirit", "Damage", "Attack", "Defense", "Soulforce", "Stealth", "Slaying",
+            "Warding", "Title", "Order", "Fashion", "Quest", "Flyer", "Codex", "Warsoul",
+            "Event", "Cross", "Squad", "Faction", "Private", "Trade", "Chat", "World",
+            "Horn", "Skill", "Skills", "Demon", "Sage", "Leadership", "Nuema", "Destroyer",
+            "Battle", "Longetivity", "Durability", "Soulprime", "Lifeprime", "infuse",
+            "Infuse", "Bestiary", "Pet", "Meridian", "Area", "Shop", "Star", "Point",
+            "Flyers", "Mount", "Utility", "Craft", "Auction", "Settings", "Game",
+            "Hotkeys", "Shortcut", "Default", "Horoscope", "Stargazing", "Starshift",
+            "Birthstar", "Fatestar", "Summon", "Luminance", "Shroud", "Corona", "Glyph",
+            "Cultivation", "Warrior", "Untamed", "Tideborn", "Earthguard", "Nightshade",
+            "Blademaster", "Wizard", "Psychic", "Venomancer", "Barbarian", "Assassin",
+            "Archer", "Cleric", "Seeker", "Mystic", "Duskblade", "Stormbringer", "Windwalker",
+            "Technician", "Edgerunner", "Class", "NOTICE", "Nation", "T.", "E.", "W.",
+            "H.", "U.", "N.", "Servers", "Server", "server", "Face", "Lips", "Transpar.",
+            "Embellish", "Bundle", "Hair", "Facial", "CrusThickness", "Soften", "Money", "CON",
+            "STR", "INT", "DEX", "Guild",  "Rage", "pirate games", "Games"
+        );
 
-                        List<String> replacedWords = List.of(
-                        "Arcane Sky", "Mirage Sky", "Astral Sky", "Shifting Sky", "Twilight Sky", "Royal Sky", 
-                        "Pious Sky", "Apex Sky", "Spiritual Adept", "Aware of Principle", "Aware of Harmony", 
-                        "Aware of Discord", "Aware of Coalescence", "Transcendent", "Enlightened One", 
-                        "Aware of Vacuity", "Aware of the Myriad", "Master of Harmony", "Celestial Sage", 
-                        "Aware of the Void", "Master of Discord", "Celestial Demon", "Chaotic Soul", 
-                        "Celestial Saint", "Coba", "War Avatar", "Total Aptitute", "Perfect World", "Tebal Paha", 
-                        "Astral Infusion", "Peri", "Kebangkitan Siluman", "Perang Arctic",  
-                        "Username", "Password", "Masuk", "Level", "Vitality", "Strength", "Magic", "Dexternity", 
-                        "Spirit", "Damage", "Attack", "Defense", "Soulforce", "Stealth", "Slaying", 
-                        "Warding", "Title", "Order", "Busana", "Quest", "Flyer", "Codex", "Warsoul", 
-                        "Event", "Cross", "Party", "Guild", "Private", "Trade", "Chat", "World", 
-                        "Horn", "Skill", "Skills", "Demon", "Sage", "Leadership", "Nuema", "Destroyer", 
-                        "Battle", "Longetivity", "Durability", "Soulprime", "Lifeprime", "infuse", 
-                        "Infuse", "Bestiary", "Pet", "Meridian", "Area", "Shop", "Star", "Point", 
-                        "Flyers", "Mount", "Utility", "Craft", "Auction", "Settings", "Game", 
-                        "Hotkeys", "Shortcut", "Default", "Horoscope", "Stargazing", "Starshift", 
-                        "Birthstar", "Fatestar", "Summon", "Luminance", "Shroud", "Corona", "Glyph", 
-                        "Kultivasi", "Warrior", "Siluman", "Duyung", "Dewa", "Nightshade", 
-                        "Warrior", "Mage", "Psychic", "Foxlady", "Bestial", "Assassin", 
-                        "Archer", "Priest", "Seeker", "Mystic", "Duskblade", "Stormbringer", "Windwalker", 
-                        "Technician", "Edgerunner", "Job", "PERHATIAN", "Nation", "Du.", "De.", "P.", 
-                        "M.", "S.", "N.", "Servers", "Server", "server", "Wajah", "Lips", "Transparasi", 
-                        "Hiasan", "Ikat", "Rambut", "Rias Wajah", "Tebal Betis", "Lembut", "Koin", "CON",
-                        "STR", "INT", "DEX", "Guild"); // List of replaced words
+        // Daftar kata yang diganti
+        List<String> replacedWords = List.of(
+            "Arcane Sky", "Mirage Sky", "Astral Sky", "Shifting Sky", "Twilight Sky", "Royal Sky",
+            "Pious Sky", "Apex Sky", "Spiritual Adept", "Aware of Principle", "Aware of Harmony",
+            "Aware of Discord", "Aware of Coalescence", "Transcendent", "Enlightened One",
+            "Aware of Vacuity", "Aware of the Myriad", "Master of Harmony", "Celestial Sage",
+            "Aware of the Void", "Master of Discord", "Celestial Demon", "Chaotic Soul",
+            "Celestial Saint", "Coba", "War Avatar", "Total Aptitute", "Perfect World", "Tebal Paha",
+            "Astral Infusion", "Peri", "Kebangkitan", "Perang Arctic",
+            "Username", "Password", "Masuk", "Level", "Vitality", "Strength", "Magic", "Dexternity",
+            "Spirit", "Damage", "Attack", "Defense", "Soulforce", "Stealth", "Slaying",
+            "Warding", "Title", "Order", "Busana", "Quest", "Flyer", "Codex", "Warsoul",
+            "Event", "Cross", "Party", "Guild", "Private", "Trade", "Chat", "World",
+            "Horn", "Skill", "Skills", "Demon", "Sage", "Leadership", "Nuema", "Destroyer",
+            "Battle", "Longetivity", "Durability", "Soulprime", "Lifeprime", "infuse",
+            "Infuse", "Bestiary", "Pet", "Meridian", "Area", "Shop", "Star", "Point",
+            "Flyers", "Mount", "Utility", "Craft", "Auction", "Settings", "Game",
+            "Hotkeys", "Shortcut", "Default", "Horoscope", "Stargazing", "Starshift",
+            "Birthstar", "Fatestar", "Summon", "Luminance", "Shroud", "Corona", "Glyph",
+            "Kultivasi", "Warrior", "Siluman", "Duyung", "Dewa", "Nightshade",
+            "Warrior", "Mage", "Psychic", "Foxlady", "Bestial", "Assassin",
+            "Archer", "Priest", "Seeker", "Mystic", "Duskblade", "Stormbringer", "Windwalker",
+            "Technician", "Edgerunner", "Job", "PERHATIAN", "Nation", "Du.", "De.", "P.",
+            "M.", "S.", "N.", "Servers", "Server", "server", "Wajah", "Lips", "Transparasi",
+            "Hiasan", "Ikat", "Rambut", "Rias Wajah", "Tebal Betis", "Lembut", "Koin", "CON",
+            "STR", "INT", "DEX", "Guild", "Kritikal", "monetisasi game", "Game"
+        );
 
-                        // Replace excluded words
-                        for (int i = 0; i < excludedWords.size(); i++) {
-                            String excludedWord = excludedWords.get(i);
-                            if (originalText.contains(excludedWord)) {
-                                // Replace with format "1[Word]'
-                                String uniquePlaceholder = (i + 1) + "[" + excludedWord + "]";
-                                originalText = originalText.replace(excludedWord, uniquePlaceholder);
-                            }
-                        }
+        // Proses penggantian kata-kata yang dikecualikan dengan placeholder
+        while (matcher.find()) {
+            String originalText = matcher.group(1).trim();
 
-                        // Send the modified text for translation
-                        String translatedText = translateText(originalText, targetLanguage);
+            for (int i = 0; i < excludedWords.size(); i++) {
+                String excludedWord = excludedWords.get(i);
 
-                        // After translation, detect placeholders and restore original words
-                        String tagPattern = "(\\d+)\\[(.*?)\\]";
-                        Pattern tagRegex = Pattern.compile(tagPattern);
-                        Matcher tagMatcher = tagRegex.matcher(translatedText);
+                // Pola regex untuk pencocokan kata yang tepat (case-sensitive)
+                String wordPattern = "\\b" + Pattern.quote(excludedWord) + "\\b";
+                Pattern wordRegex = Pattern.compile(wordPattern);
+                Matcher wordMatcher = wordRegex.matcher(originalText);
 
-                        while (tagMatcher.find()) {
-                            // Retrieve index from placeholder (e.g., 1, 2, etc.)
-                            int index = Integer.parseInt(tagMatcher.group(1)) - 1; // Get corresponding index from excludedWords
-                            if (index >= 0 && index < replacedWords.size()) {
-                                // Replace placeholder with word from replacedWords list
-                                String originalWord = replacedWords.get(index);
-                                translatedText = translatedText.replace(tagMatcher.group(0), originalWord);
-                            }
-                        }
-
-                        // Replace the translation back into the content
-                        modifiedContent = new StringBuilder(modifiedContent.toString().replace(matcher.group(0), "String=\"" + translatedText + "\""));
-
-                        // Log translation process
-                        logTranslation(inputFile, originalText, translatedText); // Log translation process
-                    }
-
-                    // Save the translated file
-                    Files.write(outputFile.toPath(), modifiedContent.toString().getBytes("UTF-16LE"));
-                    // Log after file is successfully saved
-                    publish("File saved: " + outputFile.getAbsolutePath());
-                } catch (IOException e) {
-                    publish("Error processing file: " + inputFile.getAbsolutePath() + " - " + e.getMessage());
+                // Tambahkan placeholder jika kata cocok ditemukan
+                if (wordMatcher.find()) {
+                    String uniquePlaceholder = "[" + (i + 1) + "[" + excludedWord + "]]";
+                    originalText = wordMatcher.replaceAll(uniquePlaceholder);
                 }
             }
+
+            // Mengirim teks yang dimodifikasi untuk diterjemahkan
+            String translatedText = translateText(originalText, targetLanguage);
+
+            // Mengembalikan placeholder ke kata asli setelah diterjemahkan
+            String tagPattern = "\\[(\\d+)\\[(.*?)]]";
+            Pattern tagRegex = Pattern.compile(tagPattern);
+            Matcher tagMatcher = tagRegex.matcher(translatedText);
+
+            while (tagMatcher.find()) {
+                int index = Integer.parseInt(tagMatcher.group(1)) - 1;
+                if (index >= 0 && index < replacedWords.size()) {
+                    String originalWord = replacedWords.get(index);
+                    translatedText = translatedText.replace(tagMatcher.group(0), originalWord);
+                }
+            }
+
+            // Hapus semua tag placeholder yang tersisa
+            String finalContent = modifiedContent.toString().replaceAll("\\[\\[.*?]]", "");
+
+            // Ganti escape sequence \\r dan \\n
+            finalContent = finalContent.replaceAll("\\\\r", "\r").replaceAll("\\\\n", "\n");
+
+            // Ganti terjemahan kembali ke konten
+            modifiedContent = new StringBuilder(modifiedContent.toString().replace(matcher.group(0), "String=\"" + translatedText + "\""));
+
+            // Catat proses terjemahan
+            logTranslation(inputFile, originalText, translatedText);
+        }
+
+        // Simpan file terjemahan yang telah diselesaikan
+        Files.write(outputFile.toPath(), modifiedContent.toString().getBytes("UTF-16LE"));
+        publish("File saved: " + outputFile.getAbsolutePath());
+    } catch (IOException e) {
+        publish("Error processing file: " + inputFile.getAbsolutePath() + " - " + e.getMessage());
+    }
+}
+
 
             private void logTranslation(File inputFile, String originalText, String translatedText) {
                 // Add log to JTextArea
