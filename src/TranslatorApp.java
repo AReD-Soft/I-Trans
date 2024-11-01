@@ -1,4 +1,4 @@
-import javax.swing.*;
+import javax.swing.*; 
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -8,6 +8,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -140,7 +141,7 @@ public class TranslatorApp {
             
                     StringBuilder modifiedContent = new StringBuilder(content);
             
-                    // Daftar kata yang dikecualikan
+                    // List of excluded words
                     List<String> excludedWords = List.of(
                         "Arcane Sky", "Mirage Sky", "Astral Sky", "Shifting Sky", "Twilight Sky", "Royal Sky",
                         "Pious Sky", "Apex Sky", "Spiritual Adept", "Aware of Principle", "Aware of Harmony",
@@ -148,7 +149,7 @@ public class TranslatorApp {
                         "Aware of Vacuity", "Aware of the Myriad", "Master of Harmony", "Celestial Sage",
                         "Aware of the Void", "Master of Discord", "Celestial Demon", "Chaotic Soul",
                         "Celestial Saint", "Try Out", "War Avatar", "Total Aptitute", "Perfect World", "Thigh Thickness",
-                        "Astral Infusion", "Winged Elf", "Rising", "Arctic Warfare",
+                        "Astral Infusion", "Winged Elf", "Untamed Rising", "Arctic Warfare",
                         "Username", "Password", "Start", "Level", "Vitality", "Strength", "Magic", "Dexternity",
                         "Spirit", "Damage", "Attack", "Defense", "Soulforce", "Stealth", "Slaying",
                         "Warding", "Title", "Order", "Fashion", "Quest", "Flyer", "Codex", "Warsoul",
@@ -168,7 +169,7 @@ public class TranslatorApp {
                         "STR", "INT", "DEX", "Guild", "Rage", "pirate games", "Games"
                     );
             
-                    // Daftar kata yang diganti
+                    // List of replaced words
                     List<String> replacedWords = List.of(
                         "Arcane Sky", "Mirage Sky", "Astral Sky", "Shifting Sky", "Twilight Sky", "Royal Sky",
                         "Pious Sky", "Apex Sky", "Spiritual Adept", "Aware of Principle", "Aware of Harmony",
@@ -176,7 +177,7 @@ public class TranslatorApp {
                         "Aware of Vacuity", "Aware of the Myriad", "Master of Harmony", "Celestial Sage",
                         "Aware of the Void", "Master of Discord", "Celestial Demon", "Chaotic Soul",
                         "Celestial Saint", "Coba", "War Avatar", "Total Aptitute", "Perfect World", "Tebal Paha",
-                        "Astral Infusion", "Peri", "Kebangkitan", "Perang Arctic",
+                        "Astral Infusion", "Peri", "Kebangkitan Siluman", "Perang Arctic",
                         "Username", "Password", "Masuk", "Level", "Vitality", "Strength", "Magic", "Dexternity",
                         "Spirit", "Damage", "Attack", "Defense", "Soulforce", "Stealth", "Slaying",
                         "Warding", "Title", "Order", "Busana", "Quest", "Flyer", "Codex", "Warsoul",
@@ -213,9 +214,6 @@ public class TranslatorApp {
                         }
             
                         String translatedText = translateText(originalText, targetLanguage);
-                        // Hapus escape tambahan dari karakter '\r' dan '\n'
-                        translatedText = translatedText.replace("\\\\r^", "\r^").replace("\\\\n^", "\n^");
-
                         String tagPattern = "\\[(\\d+)\\[(.*?)]]";
                         Pattern tagRegex = Pattern.compile(tagPattern);
                         Matcher tagMatcher = tagRegex.matcher(translatedText);
@@ -227,10 +225,9 @@ public class TranslatorApp {
                                 translatedText = translatedText.replace(tagMatcher.group(0), originalWord);
                             }
                         }
-                        // Hapus escape tambahan dari karakter '\r' dan '\n'
-                        //String finalContent = modifiedContent.toString().replaceAll("\\[\\[.*?]]", "");
-            
-                        finalContent = finalContent.replaceAll("(?i)\\\\+r([^a-zA-Z])", "\r$1");
+                        // Remove all words that have the format [[word]] and word]]
+                        translatedText = translatedText.replaceAll("\\[\\[.*?\\]\\]", ""); // Remove [[...]] along with its contents
+                        translatedText = translatedText.replaceAll("\\b[^\\s\\[]*\\]\\]", ""); // Remove words ending with ]]
             
                         modifiedContent = new StringBuilder(modifiedContent.toString().replace(matcher.group(0), "String=\"" + translatedText + "\""));
             
@@ -260,6 +257,9 @@ public class TranslatorApp {
 
             private String translateText(String text, String targetLanguage) {
                 try {
+                    // Temporarily replace \r and \n with placeholders
+                    text = text.replace("\\r", " [[CR]] ").replace("\\n", " [[LF]] ");
+
                     // Create a URL for the Google Translate API
                     String urlStr = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + targetLanguage + "&dt=t&q=" + java.net.URLEncoder.encode(text, "UTF-8");
                     // Use URI to resolve URL issues
@@ -278,8 +278,18 @@ public class TranslatorApp {
                     in.close();
 
                     // Extract translation from JSON response
+                    // String jsonResponse = response.toString();
+                    // String translatedText = jsonResponse.split("\"")[1]; // Get the translation
+                    
+                    // Extract translation text from JSON response
                     String jsonResponse = response.toString();
-                    String translatedText = jsonResponse.split("\"")[1]; // Get the translation
+
+                    // Use regex to safely extract the translation from JSON
+                    String translatedText = jsonResponse.replaceAll(".*?\"(.*?)\".*", "$1");
+
+                    // Return placeholders to escape sequences
+                    translatedText = translatedText.replace("[[CR]]", "\\r").replace("[[LF]]", "\\n");
+
                     return translatedText;
                 } catch (Exception e) {
                     publish("Translation error: " + e.getMessage());
