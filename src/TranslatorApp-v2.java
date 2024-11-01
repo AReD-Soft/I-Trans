@@ -9,11 +9,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Properties;
 import java.util.ArrayList;
-import java.util.List;
 
 public class TranslatorApp {
     private JFrame frame;
@@ -149,40 +150,29 @@ public class TranslatorApp {
                     // List of replaced words
                     List<String> replacedWords = new ArrayList<>();
 
-                    // Load configuration from config.ini
-                    try {
-                        String jarPath = new File(TranslatorApp.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParent();
-                        File configFile = new File(jarPath, "config.ini"); // Ganti dengan nama file yang sesuai
-
-                        String config = readFileWithBOM(configFile);
-                        String[] lines = config.split("\\r?\\n");
-                        for (String line : lines) {
-                                line = line.trim();
-                            if (line.startsWith("excludedWords=")) {
-                                String words = line.substring("excludedWords=".length());
-                                for (String word : words.split(",")) {
-                                    excludedWords.add(word.trim());
-                                }
-                            } else if (line.startsWith("replacedWords=")) {
-                                String words = line.substring("replacedWords=".length());
-                                for (String word : words.split(",")) {
-                                    replacedWords.add(word.trim());
-                                }
-                            }
-                        }
-                        
-                        // Log konfigurasi yang berhasil dibaca
-                        String excludedWordsLog = String.join(", ", excludedWords);
-                        String replacedWordsLog = String.join(", ", replacedWords);
-                        System.out.println("Loaded excludedWords: " + excludedWordsLog);
-                        System.out.println("Loaded replacedWords: " + replacedWordsLog);
-                    } catch (IOException e) {
-                        JOptionPane.showMessageDialog(frame, "Failed to load configuration: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
+                 // Load configuration from config.ini
+                 Properties properties = new Properties();
+                 try {
+                    String jarPath = new File(TranslatorApp.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParent();
+                    File configFile = new File(jarPath, "config.ini");
+                    try (Reader reader = new InputStreamReader(new FileInputStream(configFile), StandardCharsets.UTF_8)) {
+                        properties.load(reader);
                     }
-            
+                    String excluded = properties.getProperty("excludedWords", "");
+                    String replaced = properties.getProperty("replacedWords", "");
+                    for (String word : excluded.split(",")) {
+                        excludedWords.add(word.trim());
+                    }
+                    for (String word : replaced.split(",")) {
+                        replacedWords.add(word.trim());
+                    }
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(null, "Failed to load configuration: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+        
                     while (matcher.find()) {
                         String originalText = matcher.group(1).trim();
+                        publish("Original text: " + originalText); // Log found text
             
                         for (int i = 0; i < excludedWords.size(); i++) {
                             String excludedWord = excludedWords.get(i);
@@ -197,40 +187,37 @@ public class TranslatorApp {
                         }
             
                         String translatedText = translateText(originalText, targetLanguage);
+                        //publish("Translated text: " + translatedText); // Log translated text
+                        
                         String tagPattern = "\\[(\\d+)\\[(.*?)]]";
                         Pattern tagRegex = Pattern.compile(tagPattern);
                         Matcher tagMatcher = tagRegex.matcher(translatedText);
-            
+                        
                         while (tagMatcher.find()) {
                             int index = Integer.parseInt(tagMatcher.group(1)) - 1;
+                            
                             if (index >= 0 && index < replacedWords.size()) {
                                 String originalWord = replacedWords.get(index);
                                 translatedText = translatedText.replace(tagMatcher.group(0), originalWord);
+                            } else {
+                                publish("Index out of bounds: " + index); // Log out bounds id
                             }
                         }
-                        // Remove all words that have the format [[word]] and word]]
+                        
+                        // Remove all unused words that have the format [[word]] and word]]
                         translatedText = translatedText.replaceAll("\\[\\[.*?\\]\\]", ""); // Remove [[...]] along with its contents
                         translatedText = translatedText.replaceAll("\\b[^\\s\\[]*\\]\\]", ""); // Remove words ending with ]]
-            
+                        publish("Final translated text: " + translatedText + "\n"); // Log final result
                         modifiedContent = new StringBuilder(modifiedContent.toString().replace(matcher.group(0), "String=\"" + translatedText + "\""));
-            
-                        logTranslation(inputFile, originalText, translatedText);
                     }
             
                     Files.write(outputFile.toPath(), modifiedContent.toString().getBytes("UTF-16LE"));
-                    publish("File saved: " + outputFile.getAbsolutePath());
+                    publish("File saved: " + outputFile.getAbsolutePath() + "\n");
                 } catch (IOException e) {
                     publish("Error processing file: " + inputFile.getAbsolutePath() + " - " + e.getMessage());
                 }
             }            
-
-            private void logTranslation(File inputFile, String originalText, String translatedText) {
-                // Add log to JTextArea
-                publish("Translated from file: " + inputFile.getAbsolutePath());
-                publish("Original: " + originalText);
-                publish("Translated: " + translatedText + "\n");
-            }
-
+            
             private String readFileWithBOM(File file) throws IOException {
                 // Read file content, taking into account BOM for UTF-8 and UTF-16
                 byte[] bytes = Files.readAllBytes(file.toPath());
